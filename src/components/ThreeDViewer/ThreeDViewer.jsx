@@ -8,7 +8,8 @@ export default function ThreeDViewer({
   length = 1000,
   width = 1000,
   shapeType = "Gear",
-  isStressSimulating = false
+  isStressSimulating = false,
+  explodedOffset = 0
 }) {
   const mountRef = useRef(null);
 
@@ -152,6 +153,7 @@ export default function ThreeDViewer({
       geometriesToDispose.push(collarGeom);
       
       const collarMesh = new THREE.Mesh(collarGeom, material);
+      collarMesh.position.y = -explodedOffset * scaleThickness * 0.6;
       collarMesh.castShadow = true;
       collarMesh.receiveShadow = true;
       workpieceGroup.add(collarMesh);
@@ -174,24 +176,47 @@ export default function ThreeDViewer({
       for (let i = 0; i < boltCount; i++) {
         const angle = (i / boltCount) * Math.PI * 2;
         const bolt = new THREE.Mesh(boltGeom, material);
+        
+        // Explode: push bolts radially outward AND slide upward in Y
+        const currentRadius = scaleRadius * 0.72 + (explodedOffset * scaleRadius * 0.3);
+        const currentY = explodedOffset * boltHeight * 0.8;
+
         bolt.position.set(
-          Math.sin(angle) * (scaleRadius * 0.72),
-          0,
-          Math.cos(angle) * (scaleRadius * 0.72)
+          Math.sin(angle) * currentRadius,
+          currentY,
+          Math.cos(angle) * currentRadius
         );
         bolt.castShadow = true;
         workpieceGroup.add(bolt);
       }
 
     } else if (shapeType === "Valve") {
-      // Pipeline channel
-      const pipeGeom = new THREE.CylinderGeometry(scaleRadius * 0.28, scaleRadius * 0.28, scaleRadius * 2.5, 16);
-      pipeGeom.rotateZ(Math.PI / 2);
-      if (isStressSimulating) applyStressColors(pipeGeom);
-      geometriesToDispose.push(pipeGeom);
-      const pipeMesh = new THREE.Mesh(pipeGeom, material);
-      pipeMesh.castShadow = true;
-      workpieceGroup.add(pipeMesh);
+      // Pipeline channel: Split into Left and Right pipes so they slide apart outwards
+      const halfPipeLength = scaleRadius * 1.25;
+
+      // Left Pipe Half
+      const pipeLeftGeom = new THREE.CylinderGeometry(scaleRadius * 0.28, scaleRadius * 0.28, halfPipeLength, 16);
+      pipeLeftGeom.rotateZ(Math.PI / 2);
+      pipeLeftGeom.translate(-halfPipeLength * 0.5, 0, 0);
+      if (isStressSimulating) applyStressColors(pipeLeftGeom);
+      geometriesToDispose.push(pipeLeftGeom);
+      const pipeLeftMesh = new THREE.Mesh(pipeLeftGeom, material);
+      // Explode: slide horizontally left (negative X)
+      pipeLeftMesh.position.x = -explodedOffset * scaleRadius * 0.8;
+      pipeLeftMesh.castShadow = true;
+      workpieceGroup.add(pipeLeftMesh);
+
+      // Right Pipe Half
+      const pipeRightGeom = new THREE.CylinderGeometry(scaleRadius * 0.28, scaleRadius * 0.28, halfPipeLength, 16);
+      pipeRightGeom.rotateZ(Math.PI / 2);
+      pipeRightGeom.translate(halfPipeLength * 0.5, 0, 0);
+      if (isStressSimulating) applyStressColors(pipeRightGeom);
+      geometriesToDispose.push(pipeRightGeom);
+      const pipeRightMesh = new THREE.Mesh(pipeRightGeom, material);
+      // Explode: slide horizontally right (positive X)
+      pipeRightMesh.position.x = explodedOffset * scaleRadius * 0.8;
+      pipeRightMesh.castShadow = true;
+      workpieceGroup.add(pipeRightMesh);
 
       // Spherical central valve body
       const bodyGeom = new THREE.SphereGeometry(scaleRadius * 0.55, 24, 24);
@@ -208,6 +233,8 @@ export default function ThreeDViewer({
       if (isStressSimulating) applyStressColors(stemGeom);
       geometriesToDispose.push(stemGeom);
       const stemMesh = new THREE.Mesh(stemGeom, material);
+      // Explode: slide stem upward in Y-axis
+      stemMesh.position.y = explodedOffset * stemHeight * 0.6;
       stemMesh.castShadow = true;
       workpieceGroup.add(stemMesh);
 
@@ -220,6 +247,8 @@ export default function ThreeDViewer({
       if (isStressSimulating) applyStressColors(wheelGeom);
       geometriesToDispose.push(wheelGeom);
       const wheelMesh = new THREE.Mesh(wheelGeom, material);
+      // Explode: slide wheel further upward in Y-axis
+      wheelMesh.position.y = explodedOffset * stemHeight * 1.3;
       wheelMesh.castShadow = true;
       workpieceGroup.add(wheelMesh);
 
@@ -237,6 +266,8 @@ export default function ThreeDViewer({
       if (isStressSimulating) applyStressColors(lipGeom);
       geometriesToDispose.push(lipGeom);
       const lipMesh = new THREE.Mesh(lipGeom, material);
+      // Explode: slide shaft collar upward
+      lipMesh.position.y = explodedOffset * scaleThickness * 1.0;
       lipMesh.castShadow = true;
       workpieceGroup.add(lipMesh);
 
@@ -253,10 +284,13 @@ export default function ThreeDViewer({
         tooth.rotation.y = -angle;
         tooth.rotation.x = 0.1; // helical angle twist
         
+        // Explode: push teeth radially outward
+        const currentDistance = scaleRadius + toothLength * 0.3 + (explodedOffset * scaleRadius * 0.4);
+
         tooth.position.set(
-          Math.sin(angle) * (scaleRadius + toothLength * 0.3),
+          Math.sin(angle) * currentDistance,
           0,
-          Math.cos(angle) * (scaleRadius + toothLength * 0.3)
+          Math.cos(angle) * currentDistance
         );
         
         tooth.castShadow = true;
@@ -302,7 +336,7 @@ export default function ThreeDViewer({
       material.dispose();
       geometriesToDispose.forEach((g) => g.dispose());
     };
-  }, [materialType, thickness, length, width, shapeType, isStressSimulating]);
+  }, [materialType, thickness, length, width, shapeType, isStressSimulating, explodedOffset]);
 
   return (
     <div className="relative w-full h-full min-h-[300px] md:min-h-[400px] bg-slate-900/10 dark:bg-slate-950/20 gold:bg-black/40 border border-slate-200/50 dark:border-white/5 gold:border-[#d4af37]/15 rounded-3xl overflow-hidden shadow-2xl flex flex-col justify-between p-4">
@@ -328,6 +362,11 @@ export default function ThreeDViewer({
         {isStressSimulating && (
           <span className="px-2.5 py-0.5 rounded-full bg-red-500/15 text-red-500 text-[8px] font-bold tracking-widest uppercase border border-red-500/20 animate-pulse">
             FEA Stress Shader
+          </span>
+        )}
+        {explodedOffset > 0 && (
+          <span className="px-2.5 py-0.5 rounded-full bg-[#bf953f]/20 text-[#bf953f] text-[8px] font-bold tracking-widest uppercase border border-[#bf953f]/30">
+            Exploded {Math.round(explodedOffset * 100)}%
           </span>
         )}
       </div>

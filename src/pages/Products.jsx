@@ -41,6 +41,7 @@ export default function Products() {
   const [calcThickness, setCalcThickness] = useState(12); // mm
   const [shapeType, setShapeType] = useState("Gear");
   const [isStress, setIsStress] = useState(false);
+  const [explodedOffset, setExplodedOffset] = useState(0);
   
   // Quote Modal states
   const [modalOpen, setModalOpen] = useState(false);
@@ -219,9 +220,7 @@ export default function Products() {
                       </button>
                     ))}
                   </div>
-                </div>
-
-                {/* Stress Simulation Toggle */}
+                </div>                 {/* Stress Simulation Toggle */}
                 <div className="flex items-center justify-between mt-6 pt-4 border-t border-slate-200/50 dark:border-white/5 gold:border-[#d4af37]/15">
                   <div>
                     <label className="text-xs font-bold text-slate-400 dark:text-gray-400 uppercase tracking-wider block">
@@ -245,6 +244,26 @@ export default function Products() {
                     />
                   </button>
                 </div>
+
+                {/* Exploded View Slider */}
+                <div className="space-y-2 mt-6 pt-4 border-t border-slate-200/50 dark:border-white/5 gold:border-[#d4af37]/15">
+                  <div className="flex justify-between text-sm">
+                    <span className="font-bold text-slate-500 dark:text-gray-300">Exploded Assembly View</span>
+                    <span className="font-black text-orange-500 gold:text-[#d4af37] font-outfit">{Math.round(explodedOffset * 100)}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value={explodedOffset}
+                    onChange={(e) => setExplodedOffset(Number(e.target.value))}
+                    className="w-full accent-orange-500 gold:accent-[#d4af37]"
+                  />
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 block">
+                    Drag to separate sub-assembly components
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -264,6 +283,7 @@ export default function Products() {
                 width={calcWidth}
                 shapeType={shapeType}
                 isStressSimulating={isStress}
+                explodedOffset={explodedOffset}
               />
             </Suspense>
           </div>
