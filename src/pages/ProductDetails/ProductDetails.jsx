@@ -70,12 +70,12 @@ export default function ProductDetails() {
     );
   }
 
-  // Sample hardcoded specs for visual completeness
+  // Specifications dynamically mapped from DB object with safety fallbacks
   const specs = [
-    { label: "Material Construction", val: "Stainless Steel 316 / 316L grade" },
-    { label: "Connection Sizes", val: "1/2\" to 4\" Flanged / Threaded" },
-    { label: "Maximum Pressure Rating", val: "Up to 1500 PSI (103 Bar)" },
-    { label: "Temperature Range", val: "-20°F to 450°F (-29°C to 232°C)" },
+    { label: "Material Construction", val: product.material || "Stainless Steel 316 / 316L grade" },
+    { label: "Connection Sizes", val: product.sizes || "1/2\" to 4\" Flanged / Threaded" },
+    { label: "Maximum Pressure Rating", val: product.pressure_rating || "Up to 1500 PSI (103 Bar)" },
+    { label: "Temperature Range", val: product.temp_range || "-20°F to 450°F (-29°C to 232°C)" },
     { label: "Certification Approvals", val: "API 6D, CE, ISO 9001:2015, SIL 3" }
   ];
 

@@ -13,7 +13,9 @@ import {
   FaTag,
   FaAlignLeft,
   FaImage,
-  FaList
+  FaList,
+  FaSlidersH,
+  FaCogs
 } from "react-icons/fa";
 
 export default function Products() {
@@ -25,6 +27,10 @@ export default function Products() {
     name: "",
     category: "",
     description: "",
+    pressure_rating: "",
+    temp_range: "",
+    material: "",
+    sizes: ""
   });
 
   const [image, setImage] = useState(null);
@@ -68,6 +74,10 @@ export default function Products() {
       name: "",
       category: "",
       description: "",
+      pressure_rating: "",
+      temp_range: "",
+      material: "",
+      sizes: ""
     });
     setImage(null);
     setImagePreview(null);
@@ -83,6 +93,10 @@ export default function Products() {
       formData.append("name", form.name);
       formData.append("category", form.category);
       formData.append("description", form.description);
+      formData.append("pressure_rating", form.pressure_rating);
+      formData.append("temp_range", form.temp_range);
+      formData.append("material", form.material);
+      formData.append("sizes", form.sizes);
 
       if (image) {
         formData.append("image", image);
@@ -109,6 +123,10 @@ export default function Products() {
       formData.append("name", form.name);
       formData.append("category", form.category);
       formData.append("description", form.description);
+      formData.append("pressure_rating", form.pressure_rating);
+      formData.append("temp_range", form.temp_range);
+      formData.append("material", form.material);
+      formData.append("sizes", form.sizes);
 
       if (image) {
         formData.append("image", image);
@@ -145,6 +163,10 @@ export default function Products() {
       name: product.name,
       category: product.category,
       description: product.description,
+      pressure_rating: product.pressure_rating || "",
+      temp_range: product.temp_range || "",
+      material: product.material || "",
+      sizes: product.sizes || ""
     });
     setImage(null);
     setImagePreview(
@@ -152,7 +174,6 @@ export default function Products() {
         ? `${UPLOAD_BASE_URL}/${product.image}`
         : null
     );
-    // Scroll to form smoothly on smaller devices
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -165,7 +186,7 @@ export default function Products() {
           <span>Products Inventory</span>
         </h1>
         <p className="text-slate-400 text-sm mt-1 uppercase font-semibold tracking-wider">
-          Manage industrial product catalog, categories, and technical images
+          Manage industrial product catalog, categories, and technical specifications
         </p>
       </div>
 
@@ -190,10 +211,10 @@ export default function Products() {
 
             <form
               onSubmit={editId ? updateProduct : addProduct}
-              className="space-y-5"
+              className="space-y-4"
             >
               {/* Product Name */}
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                   <FaBox className="text-slate-500" /> Product Name *
                 </label>
@@ -209,7 +230,7 @@ export default function Products() {
               </div>
 
               {/* Category */}
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                   <FaTag className="text-slate-500" /> Category *
                 </label>
@@ -224,8 +245,77 @@ export default function Products() {
                 />
               </div>
 
+              {/* Specifications Subheading */}
+              <div className="border-t border-white/5 pt-3 mt-3">
+                <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                  <FaSlidersH className="text-orange-500 gold:text-[#d4af37]" /> Technical Specs (Optional)
+                </h4>
+              </div>
+
+              {/* Material & Sizes */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">
+                    Material Alloy
+                  </label>
+                  <input
+                    type="text"
+                    name="material"
+                    placeholder="e.g. SS316 / Brass"
+                    value={form.material}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2.5 bg-slate-950/40 border border-white/5 rounded-xl text-slate-200 focus:outline-none focus:border-orange-500 gold:focus:border-[#d4af37] transition-all text-xs placeholder:text-slate-600"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">
+                    Con. Sizes
+                  </label>
+                  <input
+                    type="text"
+                    name="sizes"
+                    placeholder='e.g. 1/2" to 4"'
+                    value={form.sizes}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2.5 bg-slate-950/40 border border-white/5 rounded-xl text-slate-200 focus:outline-none focus:border-orange-500 gold:focus:border-[#d4af37] transition-all text-xs placeholder:text-slate-600"
+                  />
+                </div>
+              </div>
+
+              {/* Pressure Rating & Temperature Range */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">
+                    Max Pressure
+                  </label>
+                  <input
+                    type="text"
+                    name="pressure_rating"
+                    placeholder="e.g. 1500 PSI"
+                    value={form.pressure_rating}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2.5 bg-slate-950/40 border border-white/5 rounded-xl text-slate-200 focus:outline-none focus:border-orange-500 gold:focus:border-[#d4af37] transition-all text-xs placeholder:text-slate-600"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">
+                    Temp Range
+                  </label>
+                  <input
+                    type="text"
+                    name="temp_range"
+                    placeholder="e.g. -20F to 450F"
+                    value={form.temp_range}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2.5 bg-slate-950/40 border border-white/5 rounded-xl text-slate-200 focus:outline-none focus:border-orange-500 gold:focus:border-[#d4af37] transition-all text-xs placeholder:text-slate-600"
+                  />
+                </div>
+              </div>
+
               {/* Description */}
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                   <FaAlignLeft className="text-slate-500" /> Description *
                 </label>
@@ -235,13 +325,13 @@ export default function Products() {
                   value={form.description}
                   onChange={handleChange}
                   required
-                  rows="4"
+                  rows="3"
                   className="w-full px-4 py-3 bg-slate-950/40 border border-white/5 rounded-xl text-slate-200 focus:outline-none focus:border-orange-500 gold:focus:border-[#d4af37] transition-all text-sm resize-none placeholder:text-slate-600"
                 />
               </div>
 
               {/* Image Uploader */}
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
                   <FaImage className="text-slate-500" /> Product Image
                 </label>
@@ -268,13 +358,10 @@ export default function Products() {
                     </div>
                   </div>
                 ) : (
-                  <label className="border-2 border-dashed border-white/5 hover:border-orange-500/50 gold:hover:border-[#d4af37]/50 rounded-2xl p-6 flex flex-col items-center justify-center gap-2 cursor-pointer bg-slate-950/20 hover:bg-slate-950/40 transition-all group">
-                    <FaUpload className="text-slate-500 group-hover:text-orange-500 gold:group-hover:text-[#d4af37] text-2xl transition-all" />
+                  <label className="border-2 border-dashed border-white/5 hover:border-orange-500/50 gold:hover:border-[#d4af37]/50 rounded-2xl p-4 flex flex-col items-center justify-center gap-1 cursor-pointer bg-slate-950/20 hover:bg-slate-950/40 transition-all group">
+                    <FaUpload className="text-slate-555 group-hover:text-orange-500 gold:group-hover:text-[#d4af37] text-lg transition-all" />
                     <span className="text-xs font-bold text-slate-400 group-hover:text-slate-300 transition-all">
                       Upload File
-                    </span>
-                    <span className="text-[10px] text-slate-600">
-                      PNG, JPG, JPEG (Max 5MB)
                     </span>
                     <input
                       type="file"
@@ -382,11 +469,31 @@ export default function Products() {
                         <div className="font-black font-outfit text-white text-base">
                           {product.name}
                         </div>
-                        <div>
-                          <span className="inline-block px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase bg-orange-500/10 text-orange-400 border border-orange-500/20 gold:bg-[#d4af37]/10 gold:text-[#d4af37] gold:border-[#d4af37]/20">
+                        <div className="flex flex-wrap gap-1.5 items-center">
+                          <span className="inline-block px-2 py-0.5 rounded text-[9px] font-black uppercase bg-orange-500/10 text-orange-400 border border-orange-500/20 gold:bg-[#d4af37]/10 gold:text-[#d4af37] gold:border-[#d4af37]/20">
                             {product.category}
                           </span>
                         </div>
+                        {/* Compact specifications summary listing */}
+                        {(product.material || product.sizes || product.pressure_rating) && (
+                          <div className="text-[10px] text-slate-500 space-y-0.5 border-t border-white/5 pt-1 mt-1 max-w-[200px] leading-relaxed">
+                            {product.material && (
+                              <div>
+                                <span className="font-bold text-slate-400">Material:</span> {product.material}
+                              </div>
+                            )}
+                            {product.sizes && (
+                              <div>
+                                <span className="font-bold text-slate-400">Sizes:</span> {product.sizes}
+                              </div>
+                            )}
+                            {product.pressure_rating && (
+                              <div>
+                                <span className="font-bold text-slate-400">Pressure:</span> {product.pressure_rating}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </td>
 
                       <td className="p-4 max-w-xs xl:max-w-md hidden md:table-cell">
