@@ -39,6 +39,8 @@ export default function Products() {
   const [calcLength, setCalcLength] = useState(600); // mm
   const [calcWidth, setCalcWidth] = useState(600); // mm
   const [calcThickness, setCalcThickness] = useState(12); // mm
+  const [shapeType, setShapeType] = useState("Gear");
+  const [isStress, setIsStress] = useState(false);
   
   // Quote Modal states
   const [modalOpen, setModalOpen] = useState(false);
@@ -195,6 +197,54 @@ export default function Products() {
                     className="w-full accent-orange-500 gold:accent-[#d4af37]"
                   />
                 </div>
+
+                {/* Shape Selector */}
+                <div className="space-y-2 mt-6">
+                  <label className="text-xs font-bold text-slate-400 dark:text-gray-400 uppercase tracking-wider block">
+                    Component Shape
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {["Gear", "Flange", "Valve"].map((shape) => (
+                      <button
+                        key={shape}
+                        type="button"
+                        onClick={() => setShapeType(shape)}
+                        className={`py-2 px-3 rounded-xl text-xs font-bold transition-all duration-300 border ${
+                          shapeType === shape
+                            ? "bg-orange-500 border-transparent text-white shadow-md gold:bg-gradient-to-r gold:from-[#bf953f] gold:to-[#aa771c]"
+                            : "bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-gray-400 hover:bg-slate-100 dark:hover:bg-slate-900 gold:bg-black/60 gold:border-[#d4af37]/20 gold:text-gray-400"
+                        }`}
+                      >
+                        {shape}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Stress Simulation Toggle */}
+                <div className="flex items-center justify-between mt-6 pt-4 border-t border-slate-200/50 dark:border-white/5 gold:border-[#d4af37]/15">
+                  <div>
+                    <label className="text-xs font-bold text-slate-400 dark:text-gray-400 uppercase tracking-wider block">
+                      FEA Stress Simulation
+                    </label>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                      View load distribution heat map
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsStress(!isStress)}
+                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                      isStress ? "bg-red-500" : "bg-slate-300 dark:bg-slate-800 gold:bg-black border-slate-200 dark:border-slate-800 gold:border-[#d4af37]/25"
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                        isStress ? "translate-x-5" : "translate-x-0"
+                      }`}
+                    />
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -212,6 +262,8 @@ export default function Products() {
                 thickness={calcThickness}
                 length={calcLength}
                 width={calcWidth}
+                shapeType={shapeType}
+                isStressSimulating={isStress}
               />
             </Suspense>
           </div>
