@@ -1,0 +1,207 @@
+/* stylelint-disable at-rule-no-unknown */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* -------------------------
+THEMES
+------------------------- */
+
+html.dark {
+  --bg: #0b0f19;
+  --card: #111827;
+  --text: #f9fafb;
+  --accent: #f97316;
+  --accent-rgb: 249, 115, 22;
+  --muted: #9ca3af;
+  --border: rgba(255, 255, 255, 0.08);
+}
+
+html.light {
+  --bg: #f3f4f6;
+  --card: #ffffff;
+  --text: #111827;
+  --accent: #f97316;
+  --accent-rgb: 249, 115, 22;
+  --muted: #4b5563;
+  --border: rgba(17, 24, 39, 0.08);
+}
+
+html.gold {
+  --bg: #050505;
+  --card: #121212;
+  --text: #f3f4f6;
+  --accent: #d4af37;
+  --accent-rgb: 212, 175, 55;
+  --muted: #9ca3af;
+  --border: rgba(212, 175, 55, 0.2);
+}
+
+/* -------------------------
+GLOBAL
+------------------------- */
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  overflow-x: hidden;
+  font-family: "Outfit", "Inter", sans-serif;
+
+  background: var(--bg);
+  color: var(--text);
+
+  transition:
+    background 0.4s ease,
+    color 0.4s ease;
+}
+
+/* -------------------------
+SCROLLBAR
+------------------------- */
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #111827;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg,
+      #ff7a00,
+      #ff4500);
+
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #ff7a00;
+}
+
+/* -------------------------
+SELECTION
+------------------------- */
+
+::selection {
+  background: #ff7a00;
+  color: white;
+}
+
+/* -------------------------
+GLASS EFFECT
+------------------------- */
+
+.glass {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+}
+
+.glass-premium {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(24px);
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+}
+
+.glass-premium:hover {
+  border-color: var(--accent);
+  box-shadow: 0 15px 40px -10px rgba(var(--accent-rgb), 0.15);
+}
+
+/* -------------------------
+GRADIENT TEXT
+------------------------- */
+
+.gradient-text {
+  background: linear-gradient(90deg, var(--accent), #ff9d47);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gradient-gold {
+  background: linear-gradient(135deg, #bf953f 0%, #fcf6ba 25%, #b38728 50%, #fbf5b7 75%, #aa771c 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* -------------------------
+MARQUEE
+------------------------- */
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  animation:
+    marquee 20s linear infinite;
+}
+
+/* -------------------------
+FLOATING ANIMATION
+------------------------- */
+
+@keyframes float {
+  0% {
+    transform:
+      translateY(0px);
+  }
+
+  50% {
+    transform:
+      translateY(-15px);
+  }
+
+  100% {
+    transform:
+      translateY(0px);
+  }
+}
+
+.animate-float {
+  animation:
+    float 5s ease-in-out infinite;
+}
+
+/* -------------------------
+GLOW EFFECT
+------------------------- */
+
+.glow {
+  box-shadow:
+    0 0 20px rgba(249,
+      115,
+      22,
+      0.5),
+    0 0 40px rgba(249,
+      115,
+      22,
+      0.3);
+}
+
+/* -------------------------
+HERO BACKGROUND
+------------------------- */
+
+.hero-gradient {
+  background:
+    radial-gradient(circle at top left,
+      rgba(249, 115, 22, .3),
+      transparent 40%),
+    radial-gradient(circle at bottom right,
+      rgba(59, 130, 246, .2),
+      transparent 40%);
+}
