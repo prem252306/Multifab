@@ -9,9 +9,16 @@ export default function ThreeDViewer({
   width = 1000,
   shapeType = "Gear",
   isStressSimulating = false,
-  explodedOffset = 0
+  explodedOffset = 0,
+  isBlueprintMode = false
 }) {
   const mountRef = useRef(null);
+  const lengthLabelRef = useRef(null);
+  const widthLabelRef = useRef(null);
+  const thicknessLabelRef = useRef(null);
+  const lengthValueRef = useRef(null);
+  const widthValueRef = useRef(null);
+  const thicknessValueRef = useRef(null);
 
   useEffect(() => {
     const container = mountRef.current;
@@ -47,7 +54,7 @@ export default function ThreeDViewer({
 
     // 1. Scene Setup
     const scene = new THREE.Scene();
-    scene.background = null;
+    scene.background = isBlueprintMode ? new THREE.Color(0x050b14) : null;
 
     // 2. Camera Setup
     const camera = new THREE.PerspectiveCamera(
@@ -92,9 +99,9 @@ export default function ThreeDViewer({
     controls.maxDistance = 15;
 
     // 6. Grid floor (subtle technical look)
-    const gridHelper = new THREE.GridHelper(20, 20, 0xfa7316, 0x334155);
+    const gridHelper = new THREE.GridHelper(20, 20, isBlueprintMode ? 0x06b6d4 : 0xfa7316, isBlueprintMode ? 0x083344 : 0x334155);
     gridHelper.position.y = -2;
-    if (document.documentElement.classList.contains("gold")) {
+    if (!isBlueprintMode && document.documentElement.classList.contains("gold")) {
       gridHelper.material.color.setHex(0xd4af37);
     }
     scene.add(gridHelper);
@@ -146,23 +153,57 @@ export default function ThreeDViewer({
     const workpieceGroup = new THREE.Group();
     const geometriesToDispose = [];
 
+    // Helper to generate volumetric blueprint outlines or standard shaded meshes
+    const createWorkpieceMesh = (geometry, customMaterial = null) => {
+      geometriesToDispose.push(geometry);
+      
+      if (isBlueprintMode) {
+        // Transparent dark backing volume
+        const backingMat = new THREE.MeshBasicMaterial({
+          color: 0x0c4a6e, // slate-cyan-800
+          transparent: true,
+          opacity: 0.12,
+          depthWrite: true
+        });
+        const backingMesh = new THREE.Mesh(geometry, backingMat);
+        
+        // Crisp technical outlines
+        const edges = new THREE.EdgesGeometry(geometry);
+        geometriesToDispose.push(edges);
+        
+        const cyanOutlineMat = new THREE.LineBasicMaterial({
+          color: isStressSimulating ? 0xffffff : 0x06b6d4, // Cyan line or dynamic stress gradient
+          vertexColors: isStressSimulating,
+          transparent: true,
+          opacity: 0.85
+        });
+        const outlines = new THREE.LineSegments(edges, cyanOutlineMat);
+        
+        const subGroup = new THREE.Group();
+        subGroup.add(backingMesh);
+        subGroup.add(outlines);
+        return subGroup;
+      } else {
+        const mesh = new THREE.Mesh(geometry, customMaterial || material);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        return mesh;
+      }
+    };
+
     if (shapeType === "Flange") {
       // Flange geometry: Outer circular collar
       const collarGeom = new THREE.CylinderGeometry(scaleRadius, scaleRadius, scaleThickness, 32);
       if (isStressSimulating) applyStressColors(collarGeom);
-      geometriesToDispose.push(collarGeom);
       
-      const collarMesh = new THREE.Mesh(collarGeom, material);
+      const collarMesh = createWorkpieceMesh(collarGeom);
       collarMesh.position.y = -explodedOffset * scaleThickness * 0.6;
-      collarMesh.castShadow = true;
-      collarMesh.receiveShadow = true;
       workpieceGroup.add(collarMesh);
 
       // Central dark cylinder representing pipe passage hole
       const holeGeom = new THREE.CylinderGeometry(scaleRadius * 0.38, scaleRadius * 0.38, scaleThickness * 1.05, 32);
-      geometriesToDispose.push(holeGeom);
       const holeMaterial = new THREE.MeshStandardMaterial({ color: 0x05070a, roughness: 0.8 });
-      const holeMesh = new THREE.Mesh(holeGeom, holeMaterial);
+      const holeMesh = createWorkpieceMesh(holeGeom, isBlueprintMode ? null : holeMaterial);
       workpieceGroup.add(holeMesh);
 
       // Radial bolted studs
@@ -171,11 +212,10 @@ export default function ThreeDViewer({
       const boltHeight = scaleThickness * 1.5;
       const boltGeom = new THREE.CylinderGeometry(boltRadius, boltRadius, boltHeight, 16);
       if (isStressSimulating) applyStressColors(boltGeom);
-      geometriesToDispose.push(boltGeom);
 
       for (let i = 0; i < boltCount; i++) {
         const angle = (i / boltCount) * Math.PI * 2;
-        const bolt = new THREE.Mesh(boltGeom, material);
+        const bolt = createWorkpieceMesh(boltGeom);
         
         // Explode: push bolts radially outward AND slide upward in Y
         const currentRadius = scaleRadius * 0.72 + (explodedOffset * scaleRadius * 0.3);
@@ -186,7 +226,6 @@ export default function ThreeDViewer({
           currentY,
           Math.cos(angle) * currentRadius
         );
-        bolt.castShadow = true;
         workpieceGroup.add(bolt);
       }
 
@@ -199,11 +238,9 @@ export default function ThreeDViewer({
       pipeLeftGeom.rotateZ(Math.PI / 2);
       pipeLeftGeom.translate(-halfPipeLength * 0.5, 0, 0);
       if (isStressSimulating) applyStressColors(pipeLeftGeom);
-      geometriesToDispose.push(pipeLeftGeom);
-      const pipeLeftMesh = new THREE.Mesh(pipeLeftGeom, material);
+      const pipeLeftMesh = createWorkpieceMesh(pipeLeftGeom);
       // Explode: slide horizontally left (negative X)
       pipeLeftMesh.position.x = -explodedOffset * scaleRadius * 0.8;
-      pipeLeftMesh.castShadow = true;
       workpieceGroup.add(pipeLeftMesh);
 
       // Right Pipe Half
@@ -211,19 +248,15 @@ export default function ThreeDViewer({
       pipeRightGeom.rotateZ(Math.PI / 2);
       pipeRightGeom.translate(halfPipeLength * 0.5, 0, 0);
       if (isStressSimulating) applyStressColors(pipeRightGeom);
-      geometriesToDispose.push(pipeRightGeom);
-      const pipeRightMesh = new THREE.Mesh(pipeRightGeom, material);
+      const pipeRightMesh = createWorkpieceMesh(pipeRightGeom);
       // Explode: slide horizontally right (positive X)
       pipeRightMesh.position.x = explodedOffset * scaleRadius * 0.8;
-      pipeRightMesh.castShadow = true;
       workpieceGroup.add(pipeRightMesh);
 
       // Spherical central valve body
       const bodyGeom = new THREE.SphereGeometry(scaleRadius * 0.55, 24, 24);
       if (isStressSimulating) applyStressColors(bodyGeom);
-      geometriesToDispose.push(bodyGeom);
-      const bodyMesh = new THREE.Mesh(bodyGeom, material);
-      bodyMesh.castShadow = true;
+      const bodyMesh = createWorkpieceMesh(bodyGeom);
       workpieceGroup.add(bodyMesh);
 
       // Stem cylinder extending upwards
@@ -231,11 +264,9 @@ export default function ThreeDViewer({
       const stemGeom = new THREE.CylinderGeometry(scaleRadius * 0.08, scaleRadius * 0.08, stemHeight, 12);
       stemGeom.translate(0, stemHeight * 0.5, 0);
       if (isStressSimulating) applyStressColors(stemGeom);
-      geometriesToDispose.push(stemGeom);
-      const stemMesh = new THREE.Mesh(stemGeom, material);
+      const stemMesh = createWorkpieceMesh(stemGeom);
       // Explode: slide stem upward in Y-axis
       stemMesh.position.y = explodedOffset * stemHeight * 0.6;
-      stemMesh.castShadow = true;
       workpieceGroup.add(stemMesh);
 
       // Torus handwheel on top of the stem
@@ -245,30 +276,23 @@ export default function ThreeDViewer({
       wheelGeom.rotateX(Math.PI / 2);
       wheelGeom.translate(0, stemHeight, 0);
       if (isStressSimulating) applyStressColors(wheelGeom);
-      geometriesToDispose.push(wheelGeom);
-      const wheelMesh = new THREE.Mesh(wheelGeom, material);
+      const wheelMesh = createWorkpieceMesh(wheelGeom);
       // Explode: slide wheel further upward in Y-axis
       wheelMesh.position.y = explodedOffset * stemHeight * 1.3;
-      wheelMesh.castShadow = true;
       workpieceGroup.add(wheelMesh);
 
     } else {
       // Default: Helical Gear
       const coreGeom = new THREE.CylinderGeometry(scaleRadius, scaleRadius, scaleThickness, 32);
       if (isStressSimulating) applyStressColors(coreGeom);
-      geometriesToDispose.push(coreGeom);
-      const coreMesh = new THREE.Mesh(coreGeom, material);
-      coreMesh.castShadow = true;
-      coreMesh.receiveShadow = true;
+      const coreMesh = createWorkpieceMesh(coreGeom);
       workpieceGroup.add(coreMesh);
 
       const lipGeom = new THREE.CylinderGeometry(scaleRadius * 0.4, scaleRadius * 0.4, scaleThickness * 1.3, 24);
       if (isStressSimulating) applyStressColors(lipGeom);
-      geometriesToDispose.push(lipGeom);
-      const lipMesh = new THREE.Mesh(lipGeom, material);
+      const lipMesh = createWorkpieceMesh(lipGeom);
       // Explode: slide shaft collar upward
       lipMesh.position.y = explodedOffset * scaleThickness * 1.0;
-      lipMesh.castShadow = true;
       workpieceGroup.add(lipMesh);
 
       const teethCount = 16;
@@ -276,11 +300,10 @@ export default function ThreeDViewer({
       const toothWidth = scaleRadius * 0.16;
       const toothGeom = new THREE.BoxGeometry(toothWidth, scaleThickness, toothLength);
       if (isStressSimulating) applyStressColors(toothGeom);
-      geometriesToDispose.push(toothGeom);
 
       for (let i = 0; i < teethCount; i++) {
         const angle = (i / teethCount) * Math.PI * 2;
-        const tooth = new THREE.Mesh(toothGeom, material);
+        const tooth = createWorkpieceMesh(toothGeom);
         tooth.rotation.y = -angle;
         tooth.rotation.x = 0.1; // helical angle twist
         
@@ -292,17 +315,102 @@ export default function ThreeDViewer({
           0,
           Math.cos(angle) * currentDistance
         );
-        
-        tooth.castShadow = true;
-        tooth.receiveShadow = true;
         workpieceGroup.add(tooth);
       }
     }
 
     scene.add(workpieceGroup);
 
+    // 9.5 Blueprint Mode Dimension Lines (Dashed CAD Leaders)
+    if (isBlueprintMode) {
+      const lineMaterial = new THREE.LineBasicMaterial({
+        color: 0x22d3ee, // cyan-400
+        transparent: true,
+        opacity: 0.5
+      });
+
+      // Horizontal Length line (along X direction)
+      const lengthPoints = [
+        new THREE.Vector3(-scaleRadius * 1.15, -scaleThickness * 0.5 - 0.2, scaleRadius * 1.15),
+        new THREE.Vector3(scaleRadius * 1.15, -scaleThickness * 0.5 - 0.2, scaleRadius * 1.15)
+      ];
+      const lengthLineGeom = new THREE.BufferGeometry().setFromPoints(lengthPoints);
+      geometriesToDispose.push(lengthLineGeom);
+      const lengthLine = new THREE.Line(lengthLineGeom, lineMaterial);
+      workpieceGroup.add(lengthLine);
+
+      // Horizontal length ticks
+      const lengthTickLeftGeom = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(-scaleRadius * 1.15, -scaleThickness * 0.5 - 0.35, scaleRadius * 1.15),
+        new THREE.Vector3(-scaleRadius * 1.15, -scaleThickness * 0.5 - 0.05, scaleRadius * 1.15)
+      ]);
+      geometriesToDispose.push(lengthTickLeftGeom);
+      workpieceGroup.add(new THREE.Line(lengthTickLeftGeom, lineMaterial));
+
+      const lengthTickRightGeom = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(scaleRadius * 1.15, -scaleThickness * 0.5 - 0.35, scaleRadius * 1.15),
+        new THREE.Vector3(scaleRadius * 1.15, -scaleThickness * 0.5 - 0.05, scaleRadius * 1.15)
+      ]);
+      geometriesToDispose.push(lengthTickRightGeom);
+      workpieceGroup.add(new THREE.Line(lengthTickRightGeom, lineMaterial));
+
+      // Depth/Width line (along Z direction)
+      const widthPoints = [
+        new THREE.Vector3(-scaleRadius * 1.15, -scaleThickness * 0.5 - 0.2, -scaleRadius * 1.15),
+        new THREE.Vector3(-scaleRadius * 1.15, -scaleThickness * 0.5 - 0.2, scaleRadius * 1.15)
+      ];
+      const widthLineGeom = new THREE.BufferGeometry().setFromPoints(widthPoints);
+      geometriesToDispose.push(widthLineGeom);
+      const widthLine = new THREE.Line(widthLineGeom, lineMaterial);
+      workpieceGroup.add(widthLine);
+
+      // Depth/Width ticks
+      const widthTickBackGeom = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(-scaleRadius * 1.15, -scaleThickness * 0.5 - 0.35, -scaleRadius * 1.15),
+        new THREE.Vector3(-scaleRadius * 1.15, -scaleThickness * 0.5 - 0.05, -scaleRadius * 1.15)
+      ]);
+      geometriesToDispose.push(widthTickBackGeom);
+      workpieceGroup.add(new THREE.Line(widthTickBackGeom, lineMaterial));
+
+      const widthTickFrontGeom = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(-scaleRadius * 1.15, -scaleThickness * 0.5 - 0.35, scaleRadius * 1.15),
+        new THREE.Vector3(-scaleRadius * 1.15, -scaleThickness * 0.5 - 0.05, scaleRadius * 1.15)
+      ]);
+      geometriesToDispose.push(widthTickFrontGeom);
+      workpieceGroup.add(new THREE.Line(widthTickFrontGeom, lineMaterial));
+
+      // Vertical thickness line (along Y direction)
+      const thicknessPoints = [
+        new THREE.Vector3(scaleRadius * 1.15, -scaleThickness * 0.5, 0),
+        new THREE.Vector3(scaleRadius * 1.15, scaleThickness * 0.5, 0)
+      ];
+      const thicknessLineGeom = new THREE.BufferGeometry().setFromPoints(thicknessPoints);
+      geometriesToDispose.push(thicknessLineGeom);
+      const thicknessLine = new THREE.Line(thicknessLineGeom, lineMaterial);
+      workpieceGroup.add(thicknessLine);
+
+      // Vertical thickness ticks
+      const thicknessTickBottomGeom = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(scaleRadius * 1.05, -scaleThickness * 0.5, 0),
+        new THREE.Vector3(scaleRadius * 1.25, -scaleThickness * 0.5, 0)
+      ]);
+      geometriesToDispose.push(thicknessTickBottomGeom);
+      workpieceGroup.add(new THREE.Line(thicknessTickBottomGeom, lineMaterial));
+
+      const thicknessTickTopGeom = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(scaleRadius * 1.05, scaleThickness * 0.5, 0),
+        new THREE.Vector3(scaleRadius * 1.25, scaleThickness * 0.5, 0)
+      ]);
+      geometriesToDispose.push(thicknessTickTopGeom);
+      workpieceGroup.add(new THREE.Line(thicknessTickTopGeom, lineMaterial));
+    }
+
     // 10. Animation loop
     let lastTime = 0;
+    const lengthPos = new THREE.Vector3();
+    const widthPos = new THREE.Vector3();
+    const thicknessPos = new THREE.Vector3();
+
     const animate = (time) => {
       const delta = time - lastTime;
       lastTime = time;
@@ -312,6 +420,40 @@ export default function ThreeDViewer({
       }
 
       controls.update();
+
+      // Project 3D points to screen space for HTML labels
+      if (isBlueprintMode && lengthLabelRef.current && widthLabelRef.current && thicknessLabelRef.current) {
+        // 1. Length pos projection
+        lengthPos.set(0, -scaleThickness * 0.5 - 0.2, scaleRadius * 1.15);
+        lengthPos.applyMatrix4(workpieceGroup.matrixWorld);
+        lengthPos.project(camera);
+        const lenX = (lengthPos.x * 0.5 + 0.5) * container.clientWidth;
+        const lenY = (-(lengthPos.y * 0.5) + 0.5) * container.clientHeight;
+        lengthLabelRef.current.style.transform = `translate(-50%, -50%) translate(${lenX}px, ${lenY}px)`;
+        lengthLabelRef.current.style.opacity = lengthPos.z < 1 ? "1" : "0";
+        if (lengthValueRef.current) lengthValueRef.current.textContent = length;
+
+        // 2. Width pos projection
+        widthPos.set(-scaleRadius * 1.15, -scaleThickness * 0.5 - 0.2, 0);
+        widthPos.applyMatrix4(workpieceGroup.matrixWorld);
+        widthPos.project(camera);
+        const widX = (widthPos.x * 0.5 + 0.5) * container.clientWidth;
+        const widY = (-(widthPos.y * 0.5) + 0.5) * container.clientHeight;
+        widthLabelRef.current.style.transform = `translate(-50%, -50%) translate(${widX}px, ${widY}px)`;
+        widthLabelRef.current.style.opacity = widthPos.z < 1 ? "1" : "0";
+        if (widthValueRef.current) widthValueRef.current.textContent = width;
+
+        // 3. Thickness pos projection
+        thicknessPos.set(scaleRadius * 1.15, 0, 0);
+        thicknessPos.applyMatrix4(workpieceGroup.matrixWorld);
+        thicknessPos.project(camera);
+        const thickX = (thicknessPos.x * 0.5 + 0.5) * container.clientWidth;
+        const thickY = (-(thicknessPos.y * 0.5) + 0.5) * container.clientHeight;
+        thicknessLabelRef.current.style.transform = `translate(-50%, -50%) translate(${thickX}px, ${thickY}px)`;
+        thicknessLabelRef.current.style.opacity = thicknessPos.z < 1 ? "1" : "0";
+        if (thicknessValueRef.current) thicknessValueRef.current.textContent = thickness;
+      }
+
       renderer.render(scene, camera);
       animationFrameId = requestAnimationFrame(animate);
     };
@@ -336,7 +478,7 @@ export default function ThreeDViewer({
       material.dispose();
       geometriesToDispose.forEach((g) => g.dispose());
     };
-  }, [materialType, thickness, length, width, shapeType, isStressSimulating, explodedOffset]);
+  }, [materialType, thickness, length, width, shapeType, isStressSimulating, explodedOffset, isBlueprintMode]);
 
   return (
     <div className="relative w-full h-full min-h-[300px] md:min-h-[400px] bg-slate-900/10 dark:bg-slate-950/20 gold:bg-black/40 border border-slate-200/50 dark:border-white/5 gold:border-[#d4af37]/15 rounded-3xl overflow-hidden shadow-2xl flex flex-col justify-between p-4">
@@ -359,6 +501,11 @@ export default function ThreeDViewer({
         <span className="px-2.5 py-1 rounded-full bg-orange-500/15 gold:bg-[#d4af37]/15 text-orange-500 gold:text-[#d4af37] text-[10px] font-bold tracking-widest uppercase border border-orange-500/20 gold:border-[#d4af37]/20">
           WebGL Live
         </span>
+        {isBlueprintMode && (
+          <span className="px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 text-[8px] font-bold tracking-widest uppercase border border-cyan-500/30 animate-pulse">
+            CAD Hologram Mode
+          </span>
+        )}
         {isStressSimulating && (
           <span className="px-2.5 py-0.5 rounded-full bg-red-500/15 text-red-500 text-[8px] font-bold tracking-widest uppercase border border-red-500/20 animate-pulse">
             FEA Stress Shader
@@ -380,6 +527,30 @@ export default function ThreeDViewer({
           Drag to Orbit • Scroll to Zoom
         </span>
       </div>
+
+      {/* Floating CAD Dimension Labels */}
+      {isBlueprintMode && (
+        <>
+          <div
+            ref={lengthLabelRef}
+            className="absolute pointer-events-none z-20 px-2 py-0.5 bg-[#020617]/90 border border-cyan-400/40 rounded text-cyan-400 font-mono text-[9px] uppercase tracking-wider shadow-lg flex items-center gap-1 transition-opacity duration-300 opacity-0"
+          >
+            <span>L:</span> <span ref={lengthValueRef}>{length}</span><span>mm</span>
+          </div>
+          <div
+            ref={widthLabelRef}
+            className="absolute pointer-events-none z-20 px-2 py-0.5 bg-[#020617]/90 border border-cyan-400/40 rounded text-cyan-400 font-mono text-[9px] uppercase tracking-wider shadow-lg flex items-center gap-1 transition-opacity duration-300 opacity-0"
+          >
+            <span>W:</span> <span ref={widthValueRef}>{width}</span><span>mm</span>
+          </div>
+          <div
+            ref={thicknessLabelRef}
+            className="absolute pointer-events-none z-20 px-2 py-0.5 bg-[#020617]/90 border border-cyan-400/40 rounded text-cyan-400 font-mono text-[9px] uppercase tracking-wider shadow-lg flex items-center gap-1 transition-opacity duration-300 opacity-0"
+          >
+            <span>T:</span> <span ref={thicknessValueRef}>{thickness}</span><span>mm</span>
+          </div>
+        </>
+      )}
     </div>
   );
 }

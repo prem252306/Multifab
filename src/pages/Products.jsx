@@ -42,6 +42,7 @@ export default function Products() {
   const [shapeType, setShapeType] = useState("Gear");
   const [isStress, setIsStress] = useState(false);
   const [explodedOffset, setExplodedOffset] = useState(0);
+  const [isBlueprint, setIsBlueprint] = useState(false);
   
   // Quote Modal states
   const [modalOpen, setModalOpen] = useState(false);
@@ -245,6 +246,31 @@ export default function Products() {
                   </button>
                 </div>
 
+                {/* Holographic CAD Blueprint Toggle */}
+                <div className="flex items-center justify-between mt-6 pt-4 border-t border-slate-200/50 dark:border-white/5 gold:border-[#d4af37]/15">
+                  <div>
+                    <label className="text-xs font-bold text-slate-400 dark:text-gray-400 uppercase tracking-wider block">
+                      Holographic CAD Blueprint
+                    </label>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                      View outline wireframe & dimensions
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsBlueprint(!isBlueprint)}
+                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                      isBlueprint ? "bg-cyan-500" : "bg-slate-300 dark:bg-slate-800 gold:bg-black border-slate-200 dark:border-slate-800 gold:border-[#d4af37]/25"
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                        isBlueprint ? "translate-x-5" : "translate-x-0"
+                      }`}
+                    />
+                  </button>
+                </div>
+
                 {/* Exploded View Slider */}
                 <div className="space-y-2 mt-6 pt-4 border-t border-slate-200/50 dark:border-white/5 gold:border-[#d4af37]/15">
                   <div className="flex justify-between text-sm">
@@ -284,6 +310,7 @@ export default function Products() {
                 shapeType={shapeType}
                 isStressSimulating={isStress}
                 explodedOffset={explodedOffset}
+                isBlueprintMode={isBlueprint}
               />
             </Suspense>
           </div>
